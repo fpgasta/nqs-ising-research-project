@@ -28,3 +28,4 @@ sp_h = H.to_sparse()
 eig_vals, eig_vecs = eigsh(sp_h, k=2, which="SA")
 print("eigenvalues with scipy sparse:",eig_vals)
 E_gs = eig_vals[0]
+
