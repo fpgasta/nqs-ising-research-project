@@ -40,6 +40,7 @@ E_gs = eig_vals[0]
 model = FFN(N=N, alpha=1, rngs=nnx.Rngs(2))
 sampler = nk.sampler.MetropolisLocal(hi)
 vstate = nk.vqs.MCState(sampler, model, n_samples=1008)
+print("n params:", vstate.n_parameters)
 # print(vstate.parameters)
 # E = vstate.expect(H)
 # # print(E)
