@@ -89,3 +89,11 @@ plt.legend(frameon=False)
 plt.xlabel("Iterations")
 plt.ylabel("Energy")
 plt.show()
+
+corr = sum([sigmax(hi, i) @ sigmax(hi, j) for (i, j) in graph.edges()])
+vstate.n_samples = 400000 # TODO: what does n_samples actually mean? What does the MC sampling do?
+print("correlation expectation value:", vstate.expect(corr))
+
+psi = eig_vecs[:, 0]
+exact_corr = psi @ (corr @ psi)
+print("correlation expectation value exact GS:", exact_corr)
