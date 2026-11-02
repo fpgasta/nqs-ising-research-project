@@ -31,7 +31,8 @@ class RBM(nnx.Module):
         nh = N
         # self.b = nnx.Param(jax.random.normal(rngs.params(), (nh,)), dtype=float)
         self.b = nnx.Param(jnp.zeros((N,)))
-        self.W = nnx.Param(1/sqrt(N) * jax.random.normal(rngs.params(), (nh,N)), dtype=float)
+        # self.W = nnx.Param(1/jnp.sqrt(N) * jax.random.normal(rngs.params(), (nh,N)), dtype=float)
+        self.W = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,N)), dtype=float)
 
     def __call__(self, x: jax.Array):
         log_amplitude = jnp.sum(self.a * x, axis=-1)
@@ -42,56 +43,81 @@ class RBM(nnx.Module):
 
 
 
+class NQS_ising():
+    def __init__(self, N, Gamma, V, model, interaction_direction: string='x', exact_solution=False):
+        self.N = N
+        self.exact_solution = exact_solution
+        hi = nk.hilbert.Spin(s=1/2, N=N)
 
+        if interaction_direction == 'x':
+            self.H = sum([Gamma * sigmaz(hi, i) for i in range(N)])
+            self.H += sum([V * sigmax(hi, i) @ sigmax(hi, (i+1) % N) for i in range(N)])
+        elif interaction_direction == 'z':
+            self.H = sum([Gamma * sigmax(hi, i) for i in range(N)])
+            self.H += sum([V * sigmaz(hi, i) @ sigmaz(hi, (i+1) % N) for i in range(N)])
+        else:
+            print("ERROR: invalid interaction direction", interaction_direction)
+            return
+
+        self.model = model 
+
+        self.sampler = nk.sampler.MetropolisLocal(hi)
+        self.vstate = nk.vqs.MCState(self.sampler, self.model, n_samples=1008)
+        print("n params:", self.vstate.n_parameters)
+
+        self.optimized_energy = None
+
+    def exact_solution(self):
+        sp_h = self.H.to_sparse()
+        self.eig_vals, self.eig_vecs = eigsh(sp_h, k=2, which="SA")
+        self.E_gs = self.eig_vals[0]
+
+    def optimization_loop(self, n_iter: int=300):
+        self.n_iter = n_iter
+        if self.exact_solution:
+            self.exact_solution()
+
+        optimizer = nk.optimizer.Sgd(learning_rate=0.05)
+
+        gs = nk.driver.VMC(self.H, optimizer, variational_state=self.vstate, preconditioner=nk.optimizer.SR(diag_shift=0.1))
+        log = nk.logging.RuntimeLog()
+        gs.run(n_iter=n_iter, out=log)
+        self.optimized_energy = self.vstate.expect(self.H)
+        self.optimization_data = log.data
+
+    def plot(self):
+        if self.optimized_energy is None:
+            print("ERROR: optimization loop hasn't been run.")
+            return
+
+        print(f"Optimized energy : {self.optimized_energy}")
+        if self.exact_solution:
+            error = abs((self.optimized_energy.mean - self.eig_vals[0]) / self.eig_vals[0])
+            print(f"relative error   : {error}")
+
+        plt.errorbar(
+            self.optimization_data["Energy"].iters,
+            self.optimization_data["Energy"].Mean,
+            yerr=self.optimization_data["Energy"].Sigma,
+            label="RBM"
+        )
+        if self.exact_solution:
+            plt.hlines([self.E_gs], xmin=0, xmax=self.n_iter, color="black", label="Exact=%.2f"%self.E_gs)
+        plt.legend()
+
+        plt.xlabel("Iterations")
+        plt.ylabel("Energy")
+        plt.show()
 
 
 N = 20
-hi = nk.hilbert.Spin(s=1/2, N=N)
-theta = 1/4 * jnp.pi
+theta = 5/4 * jnp.pi
 Gamma = jnp.cos(theta)
-# Gamma = -1
-H = sum([Gamma * sigmaz(hi, i) for i in range(N)])
 V = jnp.sin(theta)
-# V = -1
-H += sum([V * sigmax(hi, i) @ sigmax(hi, (i+1) % N) for i in range(N)])
-
-# # exact solution
-sp_h = H.to_sparse()
-eig_vals, eig_vecs = eigsh(sp_h, k=2, which="SA")
-E_gs = eig_vals[0]
-
-# mean field ansatz
 model = RBM(N=N, rngs=nnx.Rngs(2))
 
+nqs_ising = NQS_ising(N, Gamma, V, model, 'z', True)
+nqs_ising.optimization_loop(n_iter=100)
+nqs_ising.plot()
 
-sampler = nk.sampler.MetropolisLocal(hi)
-vstate = nk.vqs.MCState(sampler, model, n_samples=1008)
-print("n params:", vstate.n_parameters)
 
-
-# optimization with preconditioner and logging
-optimizer = nk.optimizer.Sgd(learning_rate=0.05)
-
-gs = nk.driver.VMC(H, optimizer, variational_state=vstate, preconditioner=nk.optimizer.SR(diag_shift=0.1))
-log = nk.logging.RuntimeLog()
-gs.run(n_iter=300, out=log)
-
-rbm_energy = vstate.expect(H)
-# error = abs((rbm_energy.mean - eig_vals[0]) / eig_vals[0])
-print(f"Optimized energy : {rbm_energy}")
-# print(f"relative error   : {error}")
-
-data_RBM = log.data
-
-plt.errorbar(
-    data_RBM["Energy"].iters,
-    data_RBM["Energy"].Mean,
-    yerr=data_RBM["Energy"].Sigma,
-    label="RBM"
-)
-plt.hlines([E_gs], xmin=0, xmax=300, color="black", label="Exact=%.2f"%E_gs)
-plt.legend()
-
-plt.xlabel("Iterations")
-plt.ylabel("Energy")
-plt.show()
