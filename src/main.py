@@ -106,21 +106,33 @@ class NQS_ising():
 
 
 N = 16
-model = RBM(N=N, rngs=nnx.Rngs(2))
 
-theta = (7/4) * jnp.pi
-h = jnp.cos(theta)
-J = jnp.sin(theta)
+irange = range(-3, 4)
+ground_states = []
+for i in tqdm(irange):
+    theta = (5/4 + i/16) * jnp.pi
+    print("i=%i, theta=%.2f" % (i, theta))
+    h = jnp.cos(theta)
+    J = jnp.sin(theta)
 
-nqs_ising = NQS_ising(N, h, J, model, 'z', True)
-nqs_ising.optimization_loop(n_iter=150)
-nqs_ising.plot()
+    model = RBM(N=N, rngs=nnx.Rngs(2))
+    nqs_ising = NQS_ising(N, h, J, model, 'z', False)
+    nqs_ising.optimization_loop(n_iter=300)
 
-# for i in range(-3, 4):
+    if i == 0:
+        infidelity_operator = nk.observable.InfidelityOperator(nqs_ising.vstate)
 
+    ground_states.append(nqs_ising.vstate)
+
+
+infidelities = []
+for i in irange:
+    infidelities.append(ground_states[i+3].expect(infidelity_operator).mean)
+
+plt.plot(irange, infidelities)
+plt.show()
 
 # gs1 = nqs_ising.vstate
-# infidelity_operator = nk.observable.InfidelityOperator(gs1)
 
 # theta = (5/4+2/16) * jnp.pi
 # h = jnp.cos(theta)
