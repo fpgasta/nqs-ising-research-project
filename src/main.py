@@ -55,10 +55,8 @@ class NQS_ising():
             print("ERROR: invalid interaction direction", interaction_direction)
             return
 
-        self.model = model 
-
         self.sampler = nk.sampler.MetropolisLocal(hi)
-        self.vstate = nk.vqs.MCState(self.sampler, self.model, n_samples=1008)
+        self.vstate = nk.vqs.MCState(self.sampler, model, n_samples=1008)
         print("n params:", self.vstate.n_parameters)
 
         self.optimized_energy = None
@@ -108,13 +106,30 @@ class NQS_ising():
 
 
 N = 16
-theta = (3/4+1/16) * jnp.pi
-h = jnp.cos(theta)
-J = jnp.sin(theta)
 model = RBM(N=N, rngs=nnx.Rngs(2))
 
-nqs_ising = NQS_ising(N, h, J, model, 'x', True)
-nqs_ising.optimization_loop(n_iter=300)
+theta = (7/4) * jnp.pi
+h = jnp.cos(theta)
+J = jnp.sin(theta)
+
+nqs_ising = NQS_ising(N, h, J, model, 'z', True)
+nqs_ising.optimization_loop(n_iter=150)
 nqs_ising.plot()
 
+# for i in range(-3, 4):
 
+
+# gs1 = nqs_ising.vstate
+# infidelity_operator = nk.observable.InfidelityOperator(gs1)
+
+# theta = (5/4+2/16) * jnp.pi
+# h = jnp.cos(theta)
+# J = jnp.sin(theta)
+
+# nqs_ising2 = NQS_ising(N, h, J, model, 'x', False)
+# nqs_ising2.optimization_loop(n_iter=150)
+# nqs_ising2.plot()
+# gs2 = nqs_ising2.vstate
+
+# infidelity = gs2.expect(infidelity_operator)
+# print("infidelity: %.3f" % infidelity.mean)
