@@ -24,14 +24,11 @@ class FFN(nnx.Module):
 
 
 class RBM(nnx.Module):
-    def __init__(self, N: int, *, rngs: nnx.Rngs):
+    def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
         key = rngs.params()
-        # self.a = nnx.Param(jax.random.normal(rngs.params(), (N,)), dtype=float)
-        self.a = nnx.Param(jnp.zeros((N,)))
-        nh = N
-        # self.b = nnx.Param(jax.random.normal(rngs.params(), (nh,)), dtype=float)
-        self.b = nnx.Param(jnp.zeros((N,)))
-        # self.W = nnx.Param(1/jnp.sqrt(N) * jax.random.normal(rngs.params(), (nh,N)), dtype=float)
+        self.a = nnx.Param(0.01 * jax.random.normal(rngs.params(), (N,)), dtype=float)
+        nh = alpha * N
+        self.b = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,)), dtype=float)
         self.W = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,N)), dtype=float)
 
     def __call__(self, x: jax.Array):
@@ -42,19 +39,18 @@ class RBM(nnx.Module):
         return log_amplitude
 
 
-
 class NQS_ising():
-    def __init__(self, N, Gamma, V, model, interaction_direction: string='x', exact_solution=False):
+    def __init__(self, N, h, J, model, interaction_direction: string='z', exact_solution=False):
         self.N = N
         self.exact_solution = exact_solution
         hi = nk.hilbert.Spin(s=1/2, N=N)
 
         if interaction_direction == 'x':
-            self.H = sum([Gamma * sigmaz(hi, i) for i in range(N)])
-            self.H += sum([V * sigmax(hi, i) @ sigmax(hi, (i+1) % N) for i in range(N)])
+            self.H = sum([h * sigmaz(hi, i) for i in range(N)])
+            self.H += sum([J * sigmax(hi, i) @ sigmax(hi, (i+1) % N) for i in range(N)])
         elif interaction_direction == 'z':
-            self.H = sum([Gamma * sigmax(hi, i) for i in range(N)])
-            self.H += sum([V * sigmaz(hi, i) @ sigmaz(hi, (i+1) % N) for i in range(N)])
+            self.H = sum([h * sigmax(hi, i) for i in range(N)])
+            self.H += sum([J * sigmaz(hi, i) @ sigmaz(hi, (i+1) % N) for i in range(N)])
         else:
             print("ERROR: invalid interaction direction", interaction_direction)
             return
@@ -67,21 +63,22 @@ class NQS_ising():
 
         self.optimized_energy = None
 
-    def exact_solution(self):
+    def solve_exactly(self):
         sp_h = self.H.to_sparse()
-        self.eig_vals, self.eig_vecs = eigsh(sp_h, k=2, which="SA")
-        self.E_gs = self.eig_vals[0]
+        eig_vals = nk.exact.lanczos_ed(self.H, k=1)
+        self.E_gs = eig_vals[0]
 
     def optimization_loop(self, n_iter: int=300):
         self.n_iter = n_iter
         if self.exact_solution:
-            self.exact_solution()
+            self.solve_exactly()
 
-        optimizer = nk.optimizer.Sgd(learning_rate=0.05)
+        optimizer = nk.optimizer.Sgd(learning_rate=0.1)
 
         gs = nk.driver.VMC(self.H, optimizer, variational_state=self.vstate, preconditioner=nk.optimizer.SR(diag_shift=0.1))
         log = nk.logging.RuntimeLog()
         gs.run(n_iter=n_iter, out=log)
+
         self.optimized_energy = self.vstate.expect(self.H)
         self.optimization_data = log.data
 
@@ -92,14 +89,14 @@ class NQS_ising():
 
         print(f"Optimized energy : {self.optimized_energy}")
         if self.exact_solution:
-            error = abs((self.optimized_energy.mean - self.eig_vals[0]) / self.eig_vals[0])
+            error = abs((self.optimized_energy.mean - self.E_gs) / self.E_gs)
             print(f"relative error   : {error}")
 
         plt.errorbar(
             self.optimization_data["Energy"].iters,
             self.optimization_data["Energy"].Mean,
             yerr=self.optimization_data["Energy"].Sigma,
-            label="RBM"
+            label="NQS"
         )
         if self.exact_solution:
             plt.hlines([self.E_gs], xmin=0, xmax=self.n_iter, color="black", label="Exact=%.2f"%self.E_gs)
@@ -110,14 +107,14 @@ class NQS_ising():
         plt.show()
 
 
-N = 20
-theta = 5/4 * jnp.pi
-Gamma = jnp.cos(theta)
-V = jnp.sin(theta)
+N = 16
+theta = (3/4+1/16) * jnp.pi
+h = jnp.cos(theta)
+J = jnp.sin(theta)
 model = RBM(N=N, rngs=nnx.Rngs(2))
 
-nqs_ising = NQS_ising(N, Gamma, V, model, 'z', True)
-nqs_ising.optimization_loop(n_iter=100)
+nqs_ising = NQS_ising(N, h, J, model, 'x', True)
+nqs_ising.optimization_loop(n_iter=300)
 nqs_ising.plot()
 
 
