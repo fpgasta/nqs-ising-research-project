@@ -71,7 +71,7 @@ class NQS_ising():
         if self.exact_solution:
             self.solve_exactly()
 
-        optimizer = nk.optimizer.Sgd(learning_rate=0.1)
+        optimizer = nk.optimizer.Sgd(learning_rate=0.01)
 
         gs = nk.driver.VMC(self.H, optimizer, variational_state=self.vstate, preconditioner=nk.optimizer.SR(diag_shift=0.1))
         log = nk.logging.RuntimeLog()
@@ -105,43 +105,48 @@ class NQS_ising():
         plt.show()
 
 
+
 N = 16
 
-irange = range(-3, 4)
-ground_states = []
-for i in tqdm(irange):
-    theta = (5/4 + i/16) * jnp.pi
-    print("i=%i, theta=%.2f" % (i, theta))
-    h = jnp.cos(theta)
-    J = jnp.sin(theta)
-
-    model = RBM(N=N, rngs=nnx.Rngs(2))
-    nqs_ising = NQS_ising(N, h, J, model, 'z', False)
-    nqs_ising.optimization_loop(n_iter=300)
-
-    if i == 0:
-        infidelity_operator = nk.observable.InfidelityOperator(nqs_ising.vstate)
-
-    ground_states.append(nqs_ising.vstate)
 
 
-infidelities = []
-for i in irange:
-    infidelities.append(ground_states[i+3].expect(infidelity_operator).mean)
+### plot infidelity of ground states for different parameters
+# irange = range(-3, 4)
+# ground_states = []
+# for i in tqdm(irange):
+#     theta = (5/4 + i/16) * jnp.pi
+#     print("i=%i, theta=%.2f" % (i, theta))
+#     h = jnp.cos(theta)
+#     J = jnp.sin(theta)
 
-plt.plot(irange, infidelities)
-plt.show()
+#     model = RBM(N=N, rngs=nnx.Rngs(2))
+#     nqs_ising = NQS_ising(N, h, J, model, 'z', False)
+#     nqs_ising.optimization_loop(n_iter=300)
 
-# gs1 = nqs_ising.vstate
+#     if i == 0:
+#         infidelity_operator = nk.observable.InfidelityOperator(nqs_ising.vstate)
 
-# theta = (5/4+2/16) * jnp.pi
+#     ground_states.append(nqs_ising.vstate)
+
+
+# infidelities = []
+# for i in irange:
+#     infidelities.append(ground_states[i+3].expect(infidelity_operator).mean)
+
+# plt.plot(irange, infidelities)
+# plt.show()
+
+
+
+### calculate only one ground state
+theta = (5/4) * jnp.pi
 # h = jnp.cos(theta)
 # J = jnp.sin(theta)
+h = 1
+J = -0.3
 
-# nqs_ising2 = NQS_ising(N, h, J, model, 'x', False)
-# nqs_ising2.optimization_loop(n_iter=150)
-# nqs_ising2.plot()
-# gs2 = nqs_ising2.vstate
-
-# infidelity = gs2.expect(infidelity_operator)
-# print("infidelity: %.3f" % infidelity.mean)
+# model = RBM(N=N, rngs=nnx.Rngs(2))
+model = nk.models.RBM(alpha=1)
+nqs_ising = NQS_ising(N, h, J, model, 'x', True)
+nqs_ising.optimization_loop(n_iter=150)
+nqs_ising.plot()
