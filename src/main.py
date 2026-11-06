@@ -15,12 +15,18 @@ class FFN(nnx.Module):
     def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
         self.alpha = alpha
         # linear (dense) neural network layer
-        self.linear = nnx.Linear(in_features=N, out_features=alpha*N, rngs=rngs)
+        self.linear1 = nnx.Linear(in_features=N, out_features=alpha*N, rngs=rngs)
+        # self.linear2 = nnx.Linear(in_features=N, out_features=N, rngs=rngs)
+        # self.linear3 = nnx.Linear(in_features=N, out_features=alpha*N, rngs=rngs)
 
     def __call__(self, x: jax.Array):
-        y = self.linear(x)
-        y = nnx.relu(y)
-        return jnp.sum(y, axis=-1)
+        y1 = self.linear1(x)
+        y1 = nnx.relu(y1)
+        # y2 = self.linear2(y1)
+        # y2 = nnx.relu(y2)
+        # y3 = self.linear3(y2)
+        # y3 = nnx.relu(y3)
+        return jnp.sum(y1, axis=-1)
 
 
 class myRBM(nnx.Module):
@@ -156,11 +162,12 @@ theta = (5/4) * jnp.pi
 # h = jnp.cos(theta)
 # J = jnp.sin(theta)
 J = +0.3
-h = -1
+h = +1
 
 # model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
 # model = nk.models.RBM(alpha=1)
-model = JasShort(rngs=nnx.Rngs(2))
+# model = JasShort(rngs=nnx.Rngs(2))
+model = FFN(N, 3, rngs=nnx.Rngs(2))
 nqs_ising = NQS_ising(N, h, J, model, 'z', True)
 nqs_ising.optimization_loop(n_iter=500, learning_rate=0.01)
 nqs_ising.plot()
