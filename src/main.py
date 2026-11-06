@@ -23,7 +23,7 @@ class FFN(nnx.Module):
         return jnp.sum(y, axis=-1)
 
 
-class RBM(nnx.Module):
+class myRBM(nnx.Module):
     def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
         key = rngs.params()
         self.a = nnx.Param(0.01 * jax.random.normal(rngs.params(), (N,)), dtype=float)
@@ -66,12 +66,12 @@ class NQS_ising():
         eig_vals = nk.exact.lanczos_ed(self.H, k=1)
         self.E_gs = eig_vals[0]
 
-    def optimization_loop(self, n_iter: int=300):
+    def optimization_loop(self, n_iter: int=300, learning_rate=0.05):
         self.n_iter = n_iter
         if self.exact_solution:
             self.solve_exactly()
 
-        optimizer = nk.optimizer.Sgd(learning_rate=0.01)
+        optimizer = nk.optimizer.Sgd(learning_rate=learning_rate)
 
         gs = nk.driver.VMC(self.H, optimizer, variational_state=self.vstate, preconditioner=nk.optimizer.SR(diag_shift=0.1))
         log = nk.logging.RuntimeLog()
@@ -102,7 +102,9 @@ class NQS_ising():
 
         plt.xlabel("Iterations")
         plt.ylabel("Energy")
-        plt.show()
+        # plt.ylim(-17,-4)
+        # plt.show()
+        plt.savefig("plot/energy.pdf", bbox_inches="tight")
 
 
 
@@ -142,11 +144,11 @@ N = 16
 theta = (5/4) * jnp.pi
 # h = jnp.cos(theta)
 # J = jnp.sin(theta)
-h = 1
 J = -0.3
+h = +1
 
-# model = RBM(N=N, rngs=nnx.Rngs(2))
+# model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
 model = nk.models.RBM(alpha=1)
-nqs_ising = NQS_ising(N, h, J, model, 'x', True)
-nqs_ising.optimization_loop(n_iter=150)
+nqs_ising = NQS_ising(N, h, J, model, 'z', True)
+nqs_ising.optimization_loop(n_iter=200, learning_rate=0.05)
 nqs_ising.plot()
