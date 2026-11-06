@@ -38,6 +38,16 @@ class myRBM(nnx.Module):
         log_amplitude += jnp.sum(jnp.log(2 * jnp.cosh( x @ self.W.T + self.b )), axis=-1) # does this work in terms of dimensions?
         return log_amplitude
 
+class JasShort(nnx.Module):
+    def __init__(self, *, rngs: nnx.Rngs):
+        self.j1 = nnx.Param(0.01 * jax.random.normal(rngs.params(), (1,)), dtype=float)
+        self.j2 = nnx.Param(0.01 * jax.random.normal(rngs.params(), (1,)), dtype=float)
+
+    def __call__(self, x: jax.Array):
+        corr1 = x * jnp.roll(x, -1, axis=-1)
+        corr2 = x * jnp.roll(x, -2, axis=-1)
+        return jnp.sum(self.j1 * corr1 + self.j2 * corr2, axis=-1)
+
 
 class NQS_ising():
     def __init__(self, N, h, J, model, interaction_direction: string='z', exact_solution=False):
@@ -57,6 +67,7 @@ class NQS_ising():
 
         self.sampler = nk.sampler.MetropolisLocal(hi)
         self.vstate = nk.vqs.MCState(self.sampler, model, n_samples=1008)
+        # self.vstate = nk.vqs.MCState(self.sampler, model, n_samples=4032)
         print("n params:", self.vstate.n_parameters)
 
         self.optimized_energy = None
@@ -144,11 +155,12 @@ N = 16
 theta = (5/4) * jnp.pi
 # h = jnp.cos(theta)
 # J = jnp.sin(theta)
-J = -0.3
-h = +1
+J = +0.3
+h = -1
 
 # model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
-model = nk.models.RBM(alpha=1)
+# model = nk.models.RBM(alpha=1)
+model = JasShort(rngs=nnx.Rngs(2))
 nqs_ising = NQS_ising(N, h, J, model, 'z', True)
-nqs_ising.optimization_loop(n_iter=200, learning_rate=0.05)
+nqs_ising.optimization_loop(n_iter=500, learning_rate=0.01)
 nqs_ising.plot()
