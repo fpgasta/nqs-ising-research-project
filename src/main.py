@@ -44,6 +44,45 @@ class myRBM(nnx.Module):
         log_amplitude += jnp.sum(jnp.log(2 * jnp.cosh( x @ self.W.T + self.b )), axis=-1) # does this work in terms of dimensions?
         return log_amplitude
 
+class complexRBM(nnx.Module):
+    def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
+        dtype = jnp.float64
+        self.linear = nnx.Linear(in_features=N, out_features=N, rngs=rngs, dtype=dtype, param_dtype=dtype)
+
+        key = rngs.params()
+        self.a = nnx.Param(0.01 * jax.random.normal(rngs.params(), (N,)), dtype=dtype)
+        nh = alpha * N
+        self.b = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,)), dtype=dtype)
+        self.W = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,N)), dtype=dtype)
+
+    def __call__(self, x: jax.Array):
+        log_amplitude = jnp.sum(self.a * x, axis=-1)
+        # print(jnp.cosh( x @ self.W.T + self.b ).shape)
+        # print(self.a.shape)
+        log_amplitude += jnp.sum(jnp.log(2 * jnp.cosh( x @ self.W.T + self.b )), axis=-1) # does this work in terms of dimensions?
+        phase = jnp.sum(nnx.relu(self.linear(x)), axis=-1)
+
+        return log_amplitude + 1j * phase
+
+class transformRBM(nnx.Module):
+    def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
+        dtype = jnp.float64
+        self.linear = nnx.Linear(in_features=N, out_features=N, rngs=rngs, dtype=dtype, param_dtype=dtype)
+
+        key = rngs.params()
+        self.a = nnx.Param(0.01 * jax.random.normal(rngs.params(), (N,)), dtype=dtype)
+        nh = alpha * N
+        self.b = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,)), dtype=dtype)
+        self.W = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,N)), dtype=dtype)
+
+    def __call__(self, x: jax.Array):
+        y = nnx.relu(self.linear(x))
+
+        log_amplitude = jnp.sum(self.a * y, axis=-1)
+        log_amplitude += jnp.sum(jnp.log(2 * jnp.cosh( y @ self.W.T + self.b )), axis=-1) # does this work in terms of dimensions?
+        return log_amplitude
+
+
 class JasShort(nnx.Module):
     def __init__(self, *, rngs: nnx.Rngs):
         self.j1 = nnx.Param(0.01 * jax.random.normal(rngs.params(), (1,)), dtype=float)
@@ -53,7 +92,6 @@ class JasShort(nnx.Module):
         corr1 = x * jnp.roll(x, -1, axis=-1)
         corr2 = x * jnp.roll(x, -2, axis=-1)
         return jnp.sum(self.j1 * corr1 + self.j2 * corr2, axis=-1)
-
 
 class NQS_ising():
     def __init__(self, N, h, J, model, interaction_direction: string='z', exact_solution=False):
@@ -104,12 +142,12 @@ class NQS_ising():
 
         print(f"Optimized energy : {self.optimized_energy}")
         if self.exact_solution:
-            error = abs((self.optimized_energy.mean - self.E_gs) / self.E_gs)
+            error = abs((self.optimized_energy.mean.real - self.E_gs) / self.E_gs)
             print(f"relative error   : {error}")
 
         plt.errorbar(
             self.optimization_data["Energy"].iters,
-            self.optimization_data["Energy"].Mean,
+            self.optimization_data["Energy"].Mean.real,
             yerr=self.optimization_data["Energy"].Sigma,
             label="NQS"
         )
@@ -122,8 +160,6 @@ class NQS_ising():
         # plt.ylim(-17,-4)
         # plt.show()
         plt.savefig("plot/energy.pdf", bbox_inches="tight")
-
-
 
 N = 16
 
@@ -164,10 +200,13 @@ theta = (5/4) * jnp.pi
 J = +0.3
 h = +1
 
-# model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
+model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
+# model = transformRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
 # model = nk.models.RBM(alpha=1)
 # model = JasShort(rngs=nnx.Rngs(2))
-model = FFN(N, 3, rngs=nnx.Rngs(2))
+# model = FFN(N, 3, rngs=nnx.Rngs(2))
+# model = nk.models.RBMModPhase(alpha=1)
+model = complexRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
 nqs_ising = NQS_ising(N, h, J, model, 'z', True)
-nqs_ising.optimization_loop(n_iter=500, learning_rate=0.01)
+nqs_ising.optimization_loop(n_iter=200, learning_rate=0.05)
 nqs_ising.plot()
