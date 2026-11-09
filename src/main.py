@@ -64,33 +64,20 @@ class complexRBM(nnx.Module):
 
 class complexRBM2(nnx.Module):
     def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
-        dtype = jnp.float64
+        # dtype = jnp.float64
+        dtype = complex
 
         key = rngs.params()
-        self.a = nnx.Param(0.01 * jax.random.normal(rngs.params(), (2,N,)), dtype=dtype)
+        self.a = nnx.Param(0.01 * jax.random.normal(rngs.params(), (N,), dtype=dtype))
         nh = alpha * N
-        self.b = nnx.Param(0.01 * jax.random.normal(rngs.params(), (2,nh,)), dtype=dtype)
-        self.W = nnx.Param(0.01 * jax.random.normal(rngs.params(), (2,nh,N)), dtype=dtype)
+        self.b = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,), dtype=dtype))
+        self.W = nnx.Param(0.01 * jax.random.normal(rngs.params(), (nh,N), dtype=dtype))
 
     def __call__(self, x: jax.Array):
-        # result = jnp.sum(self.a * x, axis=-1)
-        result = self.a @ x.T
-        # print((x @ self.W.T).shape)
-        # print(self.W.shape)
-        # print(self.W.T.shape)
+        log_amplitude = jnp.sum(self.a * x, axis=-1)
+        log_amplitude += jnp.sum(jnp.log(2 * jnp.cosh( x @ self.W.T + self.b )), axis=-1) # does this work in terms of dimensions?
 
-        # # print(jnp.cosh( x @ self.W.T + self.b ).shape)
-        # # print(self.a.shape)
-        print(jnp.rollaxis(self.W @ x.T, 2, 0).shape)
-        print(self.b.shape)
-
-        # result += jnp.sum(jnp.log(2 * jnp.cosh( x @ self.W.T + self.b )), axis=-1) # does this work in terms of dimensions?
-        result += jnp.sum(jnp.log(2 * jnp.cosh( jnp.rollaxis(self.W @ x.T, 2, 0) + self.b )), axis=-1) # does this work in terms of dimensions?
-        log_amplitude = result[0]
-        phase = result[1]
-        # phase = jnp.sum(nnx.relu(self.linear(x)), axis=-1)
-
-        return log_amplitude + 1j * phase
+        return log_amplitude
 
 class transformRBM(nnx.Module):
     def __init__(self, N: int, alpha: int=1, *, rngs: nnx.Rngs):
@@ -226,15 +213,17 @@ theta = (5/4) * jnp.pi
 # h = jnp.cos(theta)
 # J = jnp.sin(theta)
 J = +0.3
-h = +1
+h = -1
 
-# model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
+model = myRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
 # model = transformRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
-# model = nk.models.RBM(alpha=1)
+# model = nk.models.RBM(alpha=4, param_dtype=complex)
+# model = nk.models.RBM(alpha=4)
 # model = JasShort(rngs=nnx.Rngs(2))
 # model = FFN(N, 3, rngs=nnx.Rngs(2))
 # model = nk.models.RBMModPhase(alpha=1)
-model = complexRBM2(N=N, alpha=1, rngs=nnx.Rngs(2))
-nqs_ising = NQS_ising(N, h, J, model, 'z', True)
+# model = complexRBM2(N=N, alpha=1, rngs=nnx.Rngs(2))
+# model = complexRBM(N=N, alpha=1, rngs=nnx.Rngs(2))
+nqs_ising = NQS_ising(N, h, J, model, 'x', True)
 nqs_ising.optimization_loop(n_iter=200, learning_rate=0.05)
 nqs_ising.plot()
