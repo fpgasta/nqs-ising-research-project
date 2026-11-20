@@ -1,0 +1,24 @@
+
+     "text": [
+      "lambda method\n",
+      "n params: 288\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "100%|██████████| 200/200 [00:12<00:00, 15.57it/s, Energy=-19.3237 ± 0.0082 [σ²=6.9e-02, R̂=1.005]]\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Time for 10000 calculations: 63.98368501663208s\n",
+      "Time for 10000 calculations: 65.87449812889099s\n",
+      "Time for 10000 calculations: 65.63147568702698s\n",
+      "Optimized energy : -19.3359 ± 0.0082 [σ²=6.7e-02, R̂=1.010]\n",
+      "relative error   : 0.0005839445905709708\n"
+     ]
+    },
