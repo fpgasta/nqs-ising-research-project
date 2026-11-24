@@ -1,0 +1,54 @@
+\centering
+  \begin{tikzpicture}[
+  table/.style={
+    matrix of nodes,
+    nodes={minimum width=2cm, minimum height=0.8cm, anchor=center},
+    column sep=-\pgflinewidth, row sep=-\pgflinewidth,
+    nodes in empty cells,
+  }
+]
+
+% Left table
+\matrix (left) [table,text=blue] {
+  \textbf{EC} & \textbf{Time} & \textbf{Amplitude} \\
+  1 & 10 & 670 \\
+  2 & 20 & 911 \\
+  3 & 30 & 1398 \\
+  4 & 40 & 1231 \\
+  5 & 50 & 732 \\
+  6 & 60 & 1140 \\
+};
+
+% Draw vertical separator + outer box for left
+\draw[draw=blue] (left-1-1.south west) -- (left-1-3.south east);
+\draw[draw=blue] (left-1-1.north east) -- (left-7-1.south east);
+\draw[draw=blue] (left-1-2.north east) -- (left-7-2.south east);
+
+% Right table
+\matrix (right) [table,text=OliveGreen, right=2cm of left] {
+  \textbf{EC} & \textbf{Time} & \textbf{Amplitude} \\
+  1 & 12 & 663 \\
+  2 & 24 & 901 \\
+  3 & 36 & 1419 \\
+  5 & 60 & 744 \\
+  6 & 72 & 1152 \\
+  7 & 84 & 1231 \\
+};
+
+% Draw vertical separator + outer box for right
+\draw[draw=OliveGreen] (right-1-1.south west) -- (right-1-3.south east);
+\draw[draw=OliveGreen] (right-1-1.north east) -- (right-7-1.south east);
+\draw[draw=OliveGreen] (right-1-2.north east) -- (right-7-2.south east);
+
+% Arrows between rows (automatic row anchors!)
+% \draw[->] (left-2-2.east) -- (right-2-1.west);
+% \draw[->] (left-3-2.east) -- (right-3-1.west);
+\onslide<2>{
+  \foreach \i in {2,3,4} { % horizontal rules
+    \draw[<->] (left-\i-3.east) -- (right-\i-1.west);
+  }
+  \draw[<->] (left-6-3.east) -- (right-5-1.west);
+  \draw[<->] (left-7-3.east) -- (right-6-1.west);
+}
+
+\end{tikzpicture}
