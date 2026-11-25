@@ -44,6 +44,7 @@
 \newcommand{\highlightColor}{Blue}
 \newcommand{\highlight}[1]{\texttt{\textcolor{\highlightColor}{#1}}}
 \newcommand{\todo}[1]{\textbf{ \textcolor{red}{(#1)} }}
+\renewcommand{\todo}[1]{}
 \newcommand{\nnote}[1]{\textbf{ \textcolor{blue}{(#1)} }}
 \newcommand{\rarr}{$\rightarrow$}
 \newcommand{\clkf}{\SI{40}{\MHz}}
@@ -92,18 +93,23 @@
 
 \frame{\titlepage}
 
-\section*{Introduction}
-\begin{frame}
-  \begin{figure}[h]
-    \centering
-  \end{figure}
-\end{frame}
+% \section*{Introduction}
 
+
+\begin{frame}
+  \frametitle{Neural Quantum States}
+  \begin{itemize}
+    \item Neural Quantum States (NQS): Variational method with Neural Network as the Variational Ansatz
+    \begin{itemize}
+      \item Approximate ground state by training the Neural Network
+    \end{itemize}
+    \item NetKet: Python framework for NQS
+  \end{itemize}
+\end{frame}
 
 \begin{frame}
   \frametitle{NetKet and the Ising Model}
   \begin{itemize}
-    \item NetKet: Python framework for Neural Quantum States (NQS)
     \item So far only information on NetKet for short range (SR) Ising Model
     \begin{itemize}
       \item Physically not very interesting; analytically solvable
@@ -133,7 +139,8 @@
     \langle H \rangle = \bra{\psi}H\ket{\psi} = \sum_s H_{ss} \left| \psi_s \right|^2 + \sum_{s\neq s'} H_{ss'} \psi_{s'}^* \psi_s
   \end{equation}
   If all off-diagonal components in the $\sigma_z$ basis are $\leq 0$:\\
-  Positive $\psi(s)$ suffices to minimize $\langle H \rangle$. Purely positive ground state. \\
+  Positive $\psi(s)$ suffices to minimize $\langle H \rangle$. Purely positive ground state (Perron-Frobenius theorem).
+
   $\rightarrow$ \emph{Stoquastic} Hamiltonian
 \end{frame}
 
@@ -147,6 +154,8 @@
     \phi(\mathbf{s}) &= \sum_{i=1}^N \mathrm{ReLU}(b_i + A_{ij} s_j)\nonumber
   \end{align}
   \todo{Limit range of phase to 0-2pi?}
+  \todo{Why is this not an issue in the paper}
+  \todo{Is the linear layer written correctly}
 \end{frame}
 
 \begin{frame}
@@ -174,18 +183,26 @@
 
 \begin{frame}
   \frametitle{Going to Long Range}
-  \begin{align}
-    {H}_z &= \sin(\theta) \sum_{i<j} r_{ij}^{-\alpha_\text{LR}} \sigma^z_i \sigma^z_{j \text{mod} N} - \cos(\theta) \sum_i \sigma^x_i\\
-    % J_{ij} &= r^{-\alpha_\text{LR}}
-    &r_{ij}:\text{ distance between spins i and j}\nonumber\\
-    &r_{ij} = \min(|j-i|, |N-(j-i)|)\nonumber
-  \end{align}
   \begin{itemize}
-    \item $\alpha_\text{LR}$: Decay rate of the long range interaction
-    \item $\alpha_\text{LR} \rightarrow \infty$: convergence to SR model
-    \item Chose $H_z$ that is stoquastic (for $0 \leq theta \leq \pi/2$) to avoid issues.
-    \item \text{remove z everywhere}
+    \item Long Range (LR) interactions: $\sigma_i^z \sigma_j^z$ for any $i, j$
+    \item LR model not analytically solvable
   \end{itemize}
+
+  \uncover<2>{
+    \begin{align}
+      {H}_z &= \sin(\theta) \sum_{i<j} r_{ij}^{-\alpha_\text{LR}} \sigma^z_i \sigma^z_{j \text{mod} N} - \cos(\theta) \sum_i \sigma^x_i\\
+      % J_{ij} &= r^{-\alpha_\text{LR}}
+      &r_{ij}:\text{ Distance between spins i and j}\nonumber\\
+      &r_{ij} = \min(|j-i|, |N-(j-i)|)\nonumber
+    \end{align}
+    \begin{itemize}
+      \item $\alpha_\text{LR}$: Decay rate of the long range interaction
+      \item $\alpha_\text{LR} \rightarrow \infty$: convergence to SR model
+      \item Chose $H_z$ that is stoquastic (for $0 \leq theta \leq \pi/2$) to avoid issues.
+      \item \todo{remove z everywhere; check for L/N mismatches}
+    \end{itemize}
+
+  }
 \end{frame}
 
 \begin{frame}
@@ -197,6 +214,55 @@
   \todo{understand why it's low at first}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Critical Exponents}
+  \begin{itemize}
+    \item Ising Model has phase transition for a $\theta = \theta_C$
+    \begin{itemize}
+      \item e.\,g.\ SR: $\theta_C = \pi/4$
+    \end{itemize}
+    \item Goal: Find critical exponents
+    \begin{itemize}
+      \item Taking $\theta_C$ from \cite{kimkimkim} due to time constraints
+    \end{itemize}
+  \end{itemize}
+  \todo{Phase transition vs critical point?}
+  \todo{table of alpha, explain that it converges towards SR model, cite the paper}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Correlation Function}
+  \begin{equation}
+    C_{xx}(r) = \langle \sigma_i^z \sigma_{i+r}^z \rangle
+  \end{equation}
+  At critical point: Correlations over long distance, determined by length of chain $N$
+
+  Critical exponent $\eta$:
+  \begin{equation}
+    C_{xx}(L/4) = L^{-\eta}
+  \end{equation}
+  
+  \begin{itemize}
+    \item Determine $\eta$ by fitting $\log(C_{xx})$ vs $\log(L)$
+  \end{itemize}
+  \todo{cite paper}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Determining $\eta$}
+  \begin{figure}
+    \centering
+    \includegraphics[height=.7\textheight]{correlation-paper-1.pdf}
+  \end{figure}
+  \begin{itemize}
+    \item My Data: Only $L=32$; $10^4$ iterations (time constraints)
+    \item Data from paper: $10^5$ iterations, larger RBM hidden layer
+  \end{itemize}
+  \todo{cite paper}
+  \todo{increase $n_h$??; paper mentions filters}
+  \todo{errorbars!!}
+\end{frame}
+
 % \begin{frame}
 %   \frametitle{Contents}
 %   \tableofcontents
@@ -204,6 +270,7 @@
 
 % \section{Detection of Particles}
 
+\printbibliography
 
 
 \end{document}
