@@ -106,7 +106,7 @@
     \item NetKet: Python framework for Neural Quantum States (NQS)
     \item So far only information on NetKet for short range (SR) Ising Model
     \begin{itemize}
-      \item Physically not very interesting, because exactly solvable
+      \item Physically not very interesting; analytically solvable
     \end{itemize}
     \item Goal: Use NetKet to solve long range (LR) transverse field Ising Model
   \end{itemize}
@@ -115,15 +115,16 @@
 \begin{frame}
   \frametitle{Lessons from the SR Ising Model}
   \begin{align}
-    \text{Hamiltonian:}&\enspace \hat{H}_z = h \sum_i \sigma^x_i + J \sum_i \sigma^z_i \sigma^z_{(i+1) \text{mod} N}\\
+    &\text{Hamiltonian:}\enspace {H}_z = \sin(\theta) \sum_i \sigma^z_i \sigma^z_{(i+1) \text{mod} N} - \cos(\theta) \sum_i \sigma^x_i \\
     % \text{Variational Ansatz:}&\enspace \psi(\bm s; \mathcal{W}) = e^{a\sum_j^N s_j} \prod{m=1}^L \prod_{i=1}^{n_h} cosh\left[b_i + \sum_{j=1}^L W_{ij} s_j\right]
-    \text{Variational Ansatz:}\\
-      \enspace \psi(\bm s; \mathcal{W}) = \exp &\left\{{a\sum_j^N s_j} + \sum{m=1}^L \sum_{i=1}^{n_h} \log\left( \cosh\left[b_i + \sum_{j=1}^L W_{ij} s_{(j+m)\text{mod}N}\right]\right)\right\}
+    &\text{Variational Ansatz:} \enspace \psi_\text{RBM}(\bm s; \mathcal{W}) = \nonumber\\
+        &\qquad \exp \left\{{a\sum_j^N s_j} + \sum_{m=1}^L \sum_{i=1}^{n_h} \log\left( \cosh\left[b_i + \sum_{j=1}^L W_{ij} s_{(j+m)\text{mod}N}\right]\right)\right\}\\
+        &\qquad\mathbf{s}:\text{ Spins in $\sigma_z$ basis}\nonumber
   \end{align}
-  $\rightarrow$ Ansatz always positive (for real parameters $\mathcal{W}$)
-  \begin{itemize}
-    \item \todo{RBM architecture picture}
-  \end{itemize}
+  $\rightarrow$ $\psi_\text{RBM}$ always positive (for real parameters $\mathcal{W}$)
+  % \begin{itemize}
+  %   \item \todo{RBM architecture picture}
+  % \end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -131,17 +132,31 @@
   \begin{equation}
     \langle H \rangle = \bra{\psi}H\ket{\psi} = \sum_s H_{ss} \left| \psi_s \right|^2 + \sum_{s\neq s'} H_{ss'} \psi_{s'}^* \psi_s
   \end{equation}
-  If all off-diagonal components are $\leq 0$: positive $\psi(s)$ suffices to minimize $\langle H \rangle$.\
+  If all off-diagonal components in the $\sigma_z$ basis are $\leq 0$:\\
+  Positive $\psi(s)$ suffices to minimize $\langle H \rangle$. Purely positive ground state. \\
   $\rightarrow$ \emph{Stoquastic} Hamiltonian
+\end{frame}
+
+\begin{frame}
+  \frametitle{Complex Wavefunctions}
+  Non-stoquastic Hamiltonians have non-positive ground state wavefunctions.\\
+  But previous ansatz $\psi_\text{RBM}$ always non-negative\\
+  $\rightarrow$ Add linear layer to learn the phase
+  \begin{align}
+    \psi_\text{phaseRBM}(\vec{s}) &= e^{i\phi} \cdot \psi_\text{RBM}\\
+    \phi(\mathbf{s}) &= \sum_{i=1}^N \mathrm{ReLU}(b_i + A_{ij} s_j)\nonumber
+  \end{align}
+  \todo{Limit range of phase to 0-2pi?}
 \end{frame}
 
 \begin{frame}
   \frametitle{Stoquasticity Example}
   
   \begin{equation}
-    \hat{H}_z = h \sum_i \sigma^x_i + J \sum_i \sigma^z_i \sigma^z_{(i+1) \text{mod} N}
+    % {H}_z = h \sum_i \sigma^x_i + J \sum_i \sigma^z_i \sigma^z_{(i+1) \text{mod} N}
+    {H}_z = \sin(\theta) \sum_i \sigma^z_i \sigma^z_{(i+1) \text{mod} N} - \cos(\theta) \sum_i \sigma^x_i
   \end{equation}
-  $rightarrow$ Stoquastic only for $h\leq 0$
+  $\rightarrow$ Stoquastic only for $h = -\cos(\theta) \leq 0$
 
   \only<1>{
     \begin{figure}
@@ -158,130 +173,36 @@
 \end{frame}
 
 \begin{frame}
-  \begin{figure}[h]
+  \frametitle{Going to Long Range}
+  \begin{align}
+    {H}_z &= \sin(\theta) \sum_{i<j} r_{ij}^{-\alpha_\text{LR}} \sigma^z_i \sigma^z_{j \text{mod} N} - \cos(\theta) \sum_i \sigma^x_i\\
+    % J_{ij} &= r^{-\alpha_\text{LR}}
+    &r_{ij}:\text{ distance between spins i and j}\nonumber\\
+    &r_{ij} = \min(|j-i|, |N-(j-i)|)\nonumber
+  \end{align}
+  \begin{itemize}
+    \item $\alpha_\text{LR}$: Decay rate of the long range interaction
+    \item $\alpha_\text{LR} \rightarrow \infty$: convergence to SR model
+    \item Chose $H_z$ that is stoquastic (for $0 \leq theta \leq \pi/2$) to avoid issues.
+    \item \text{remove z everywhere}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Convergence to SR Model}
+  \begin{figure}
+    \centering
+    \includegraphics[height=.8\textheight]{lr-ising-convergence.pdf}
   \end{figure}
+  \todo{understand why it's low at first}
 \end{frame}
 
-\begin{frame}[fragile]
-  \centering
-  \begin{tikzpicture}[
-  table/.style={
-    matrix of nodes,
-    nodes={minimum width=2cm, minimum height=0.8cm, anchor=center},
-    column sep=-\pgflinewidth, row sep=-\pgflinewidth,
-    nodes in empty cells,
-  }
-]
+% \begin{frame}
+%   \frametitle{Contents}
+%   \tableofcontents
+% \end{frame}
 
-% Left table
-\matrix (left) [table,text=blue] {
-  \textbf{EC} & \textbf{Time} & \textbf{Amplitude} \\
-  1 & 10 & 670 \\
-  2 & 20 & 911 \\
-  3 & 30 & 1398 \\
-  4 & 40 & 1231 \\
-  5 & 50 & 732 \\
-  6 & 60 & 1140 \\
-};
-
-% Draw vertical separator + outer box for left
-\draw[draw=blue] (left-1-1.south west) -- (left-1-3.south east);
-\draw[draw=blue] (left-1-1.north east) -- (left-7-1.south east);
-\draw[draw=blue] (left-1-2.north east) -- (left-7-2.south east);
-
-% Right table
-\matrix (right) [table,text=OliveGreen, right=2cm of left] {
-  \textbf{EC} & \textbf{Time} & \textbf{Amplitude} \\
-  1 & 12 & 663 \\
-  2 & 24 & 901 \\
-  3 & 36 & 1419 \\
-  5 & 60 & 744 \\
-  6 & 72 & 1152 \\
-  7 & 84 & 1231 \\
-};
-
-% Draw vertical separator + outer box for right
-\draw[draw=OliveGreen] (right-1-1.south west) -- (right-1-3.south east);
-\draw[draw=OliveGreen] (right-1-1.north east) -- (right-7-1.south east);
-\draw[draw=OliveGreen] (right-1-2.north east) -- (right-7-2.south east);
-
-% Arrows between rows (automatic row anchors!)
-% \draw[->] (left-2-2.east) -- (right-2-1.west);
-% \draw[->] (left-3-2.east) -- (right-3-1.west);
-\onslide<2>{
-  \foreach \i in {2,3,4} { % horizontal rules
-    \draw[<->] (left-\i-3.east) -- (right-\i-1.west);
-  }
-  \draw[<->] (left-6-3.east) -- (right-5-1.west);
-  \draw[<->] (left-7-3.east) -- (right-6-1.west);
-}
-
-\end{tikzpicture}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Contents}
-  \tableofcontents
-\end{frame}
-
-\section{Detection of Particles}
-\begin{frame}
-  \frametitle{MicroMegas Detectors}
-  \begin{minipage}{.36\textwidth}
-    \only<1>{
-      \begin{itemize}
-        \item Incoming particle ionizes gas
-        \item Electrons drift to mesh
-        \item Avalanche effect
-        \item Signal induced in readout strips 
-      \end{itemize}
-      \vfill
-    }
-    \only<2>{
-      Multiple strips for multi-channel readout
-      \begin{itemize}
-        % \item Number of readout channels $=$ number of strips
-        \item Two orthogonal layers of strips \rarr\ 2D position information 
-      \end{itemize}
-      \vfill
-    }
-    %  \nnote{better picture (e.g. no numbers)}
-  \end{minipage}
-  \begin{minipage}{.62\textwidth}
-    % \begin{figure}
-    %   \centering
-    %   \includegraphics[width=\textwidth]{micromegas-principle}
-    %   \caption{\cite{wiki:micromegas-principle}}
-    % \end{figure}
-
-\centering
-\begin{tikzpicture}[
-  every node/.style={font=\scriptsize}
-]
-  \draw [->,draw=BrickRed,line width=.5mm] (2,5) -- (3,2) coordinate[pos=.75] (particle-arrow) coordinate[pos=1] (particle-pos);
-  \node[right=1mm of particle-arrow,text=BrickRed] {Particle};
-  % \node[circle,below=.5mm of particle-pos,draw=black,minimum size=.5mm] {-};
-
-  \draw [line width=1mm] (0,3) -- (7,3) coordinate[pos=1] (cathode) coordinate[pos=0] (cathode0);
-  \draw [dashed,line width=.5mm] (0,1) -- (7,1) coordinate[pos=1] (mesh) coordinate[pos=0] (mesh0);
-  \draw [draw=black!80!white,line width=1.5mm] (0,0) -- (7,0) coordinate[pos=1] (anode) coordinate[pos=0] (anode0);
-
-  \draw [->,line width=.5mm] ($(mesh) + (0,0.2)$) -- ($(mesh)!0.3!(cathode)$);
-  \draw [->,line width=.5mm] ($(anode) + (0,0.2)$) -- ($(mesh) - (0,0.2)$);
-  \foreach \i in {1,2,3,4,5,6,7,8,9,10,11,12} { % horizontal rules
-    \draw[line width=1mm,draw=NavyBlue] ($(anode0) + \i*(0.5,0) + (0,0.1)$) -- ($(anode0) + \i*(0.5,0) + (0.2,0.1)$);
-  }
-  \draw[line width=1mm,draw=RoyalPurple] ($(anode0) + (0.5,0) - (0,0.1)$) -- ($(anode) - (0.5,0) - (0,0.1)$);
-
-  \draw [decorate,decoration={brace,mirror},line width=.5mm] ($(cathode0)+(-0.1,-0.1)$) -- ($(mesh0)+(-0.1,0.1)$) coordinate[midway] (driftgap);
-  \draw [decorate,decoration={brace,mirror},line width=.5mm] ($(mesh0)+(-0.1,-0.1)$) -- ($(anode0)+(-0.1,0.1)$) coordinate[midway] (ampgap);
-  \node[left=1mm of driftgap,align=right] {Drift\\Gap};
-  \node[left=1mm of ampgap,align=right] {Amplification\\Gap};
-
-\end{tikzpicture}
-
-  \end{minipage}
-\end{frame}
+% \section{Detection of Particles}
 
 
 
