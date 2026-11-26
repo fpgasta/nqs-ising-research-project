@@ -73,6 +73,57 @@
       \verb http://dx.doi.org/10.1103/PhysRevE.109.064123
       \endverb
     \endentry
+    \entry{Carleo_2017}{article}{}{}
+      \name{author}{2}{}{%
+        {{un=0,uniquepart=base,hash=9e5e8a8744bc0102447d5c22c8f12c2e}{%
+           family={Carleo},
+           familyi={C\bibinitperiod},
+           given={Giuseppe},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=8c95c0b716ad4a10a2ab4370aca0d0ca}{%
+           family={Troyer},
+           familyi={T\bibinitperiod},
+           given={Matthias},
+           giveni={M\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {American Association for the Advancement of Science (AAAS)}%
+      }
+      \strng{namehash}{0f689722cc172e8884104f907fbb42a2}
+      \strng{fullhash}{0f689722cc172e8884104f907fbb42a2}
+      \strng{fullhashraw}{0f689722cc172e8884104f907fbb42a2}
+      \strng{bibnamehash}{0f689722cc172e8884104f907fbb42a2}
+      \strng{authorbibnamehash}{0f689722cc172e8884104f907fbb42a2}
+      \strng{authornamehash}{0f689722cc172e8884104f907fbb42a2}
+      \strng{authorfullhash}{0f689722cc172e8884104f907fbb42a2}
+      \strng{authorfullhashraw}{0f689722cc172e8884104f907fbb42a2}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{1095-9203}
+      \field{journaltitle}{Science}
+      \field{month}{2}
+      \field{number}{6325}
+      \field{title}{Solving the quantum many-body problem with artificial neural networks}
+      \field{volume}{355}
+      \field{year}{2017}
+      \field{pages}{602\bibrangedash 606}
+      \range{pages}{5}
+      \verb{doi}
+      \verb 10.1126/science.aag2302
+      \endverb
+      \verb{urlraw}
+      \verb http://dx.doi.org/10.1126/science.aag2302
+      \endverb
+      \verb{url}
+      \verb http://dx.doi.org/10.1126/science.aag2302
+      \endverb
+    \endentry
   \enddatalist
 \endrefsection
 \endinput
