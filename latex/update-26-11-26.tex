@@ -188,9 +188,8 @@
     \psi_\text{phaseRBM}(\mathbf{s}) &= e^{i\phi(\mathbf{s})} \cdot \psi_\text{RBM}(\mathbf{s})\\
     \phi(\mathbf{s}) &= \sum_{i=1}^L \mathrm{ReLU}(b_i + A_{ij} s_j)\nonumber
   \end{align}
-  \todo{Limit range of phase to 0-2pi?}
+  Note: Range of $\phi$ not limited to $0 \leq \phi < 2\pi$
   \todo{Why is this not an issue in the paper}
-  \todo{Is the linear layer written correctly}
 \end{frame}
 
 \begin{frame}
@@ -260,7 +259,6 @@
       \item Here: taking $\theta_C$ from \parencite{Kim_2024} due to time constraints
     \end{itemize}
   \end{itemize}
-  \todo{Phase transition vs critical point?}
   \todo{table of alpha, explain that it converges towards SR model, cite the paper}
 \end{frame}
 
@@ -286,8 +284,8 @@
   \frametitle{Determining $\eta$}
   \begin{figure}
     \centering
-    \includegraphics[height=.65\textheight]{correlation-paper-1.pdf}
-    \caption{\parencite{Kim_2024}}
+    \includegraphics[height=.6\textheight]{correlation-paper-1.pdf}%
+    \parencite{Kim_2024}
   \end{figure}
   \begin{itemize}
     \item My Data: Only $L=32$; $10^4$ iterations (time constraints), only achieve $\sigma_E \sim 10^{-2}$
@@ -304,7 +302,7 @@
     % \begin{itemize}
       Find $\eta$ (for different values of $\alpha_\text{LR})$ 
       \begin{itemize}
-        \item Check if different $\alpha$ converge faster
+        \item Check if different $\alpha_\text{LR}$ converge faster
         \item Determine errors on $C_{xx}$
         \item Use larger RBM hidden layer (previously only $\alpha = 1$)
         \item Various optimizations: learning rate scheduling, symmetries, \dots
